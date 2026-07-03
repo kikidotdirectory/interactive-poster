@@ -6,5 +6,5 @@
     "moduleResolution": "node",
     "outDir": "dist"
   },
-  "include": ["*.js", "**/*.js"]
+  "include": ["*.ts", "**/*.ts"]
 }

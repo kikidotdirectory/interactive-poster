@@ -1,5 +1,3 @@
-/// <reference types="p5" />
-
 let shapes = [];
 let title;
 let subTitle;
