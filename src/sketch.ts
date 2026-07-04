@@ -2,7 +2,7 @@ let shapes = [];
 let title;
 let subTitle;
 
-// constants
+// Colors for each generated shape, light and dark corresponding to a side of the poster.
 const COLORS = {
 	red: {
 		light: "rgba(255, 132, 94, 0.85)",
@@ -30,8 +30,15 @@ const COLORS = {
 	},
 };
 
+// General poster configuration
 const CONFIG = {
-	spawnRate: 10, // How often shapes will generate (every X frames)
+	apex: { x: 0, y: 0 },
+	margin: 8,
+	title: { x: 0, y: 0, w: 0, h: 0 },
+	subTitle: { x: 0, y: 0, w: 0, h: 0 },
+	// How often shapes will generate (every X frames)
+	spawnRate: 10,
+	// The angles from the apex from which that compose the lanes that the shapes travel on.
 	angles: [
 		-25,
 		-23,
@@ -49,17 +56,14 @@ const CONFIG = {
 		24,
 		25.5,
 	],
-	apex: { x: 0, y: 0 },
-	margin: 8,
-	title: { x: 0, y: 0, w: 0, h: 0 },
-	subTitle: { x: 0, y: 0, w: 0, h: 0 },
 };
 
 function newShape() {
+	// Pick one of the lanes as the center
 	const shapeIndex = floor(random(0, CONFIG.angles.length - 1));
+	// Generate the base height of the shape.
 	const shapeHeight = floor(random(height / 20, height / 8));
-	const startHeight = height + 1;
-	const deviation = shapeHeight / 10;
+	const heightDeviation = shapeHeight / 10;
 
 	const colorName = random(["neutral", "red", "blue", "green", "yellow"]);
 	let shapeColor = undefined;
@@ -74,17 +78,20 @@ function newShape() {
 	shapes.push(
 		new Shape({
 			lanes: getLanes(shapeIndex),
-			y: startHeight,
+			y: height + 1,
 			segmentHeight: shapeHeight,
 			topOffset: random(height / 100, height / 33),
-			bottomOffsetDeviation: random(-deviation, deviation),
+			bottomOffsetDeviation: random(-heightDeviation, heightDeviation),
 			color: shapeColor,
 		}),
 	);
 }
 
 class Shape {
-	lanes: string;
+	lanes: {
+		inner: number;
+		outer: number;
+	};
 	y: number;
 	segmentHeight: number;
 	topOffset: number;
