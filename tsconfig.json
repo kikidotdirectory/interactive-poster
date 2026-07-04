@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "types": ["p5/global"],
     "allowJs": true,
     "checkJs": false,
     "moduleResolution": "node",
     "outDir": "dist"
   },
-  "include": ["*.js", "**/*.js"]
+  "include": ["*.ts", "**/*.ts"]
 }
