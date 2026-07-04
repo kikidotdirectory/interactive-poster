@@ -2,43 +2,44 @@ let shapes = [];
 let title;
 let subTitle;
 
-function preload() {
-  title = loadImage("/assets/title.png");
-  subTitle = loadImage("/assets/subTitle.png");
-}
+// constants
+const COLORS = {
+  red: {
+    light: "rgba(255, 132, 94, 0.85)",
+    normal: "rgba(255, 81, 56, 0.80)",
+    dark: "rgba(222, 54, 44, 0.75)",
+  },
+  blue: {
+    light: "rgba(235, 255, 254, 0.76)",
+    normal: "rgba(156, 178, 217, 0.75)",
+    dark: "rgba(77, 79, 102, 0.75)",
+  },
+  green: {
+    light: "rgba(247, 255, 211, 0.75)",
+    normal: "rgba(84, 150, 94, 0.75)",
+    dark: "rgba(48, 97, 56, 0.75)",
+  },
+  yellow: {
+    light: "rgba(255, 244, 107, 0.84)",
+    normal: "rgba(229, 176, 53, 0.75)",
+    dark: "rgba(168, 137, 40, 0.75)",
+  },
+  neutral: {
+    light: "rgba(255, 249, 235, 0.70)",
+    dark: "rgba(173, 167, 151, 0.40)",
+  },
+};
 
-function setup() {
-  let container = select("#sketch-container");
-  let w = container.width;
-  let h = container.height;
-  createCanvas(w, h);
-  select("canvas").parent("sketch-container");
-
-  // Set APEX based off canvas size
-  CONFIG.apex = {
-    x: floor(width / 2),
-    y: floor(height / 4),
-  };
-
-  placeTitle();
-  newShape(); // Create a single shape so that the server does not crash on reload.
-}
-
-function draw() {
-  background("rgba(233, 221, 195, 1)");
-  const { x: titleX, y: titleY, w: titleW, h: titleH } = CONFIG.title;
-  image(title, titleX, titleY, titleW, titleH);
-  const { x: subX, y: subY, w: subW, h: subH } = CONFIG.subTitle;
-  image(subTitle, subX, subY, subW, subH);
-
-  if (frameCount % CONFIG.spawnRate === 0) {
-    newShape();
-  }
-  for (let shape of shapes) {
-    shape.render();
-  }
-  shapes = shapes.filter((shape) => !shape.isDead);
-}
+const CONFIG = {
+  spawnRate: 10, // How often shapes will generate (every X frames)
+  angles: [
+    -25, -23, -20, -16, -13, -11, -6.5, 0, 5.25, 10, 13, 18, 22, 24, 25.5,
+  ],
+  apex: { x: 0, y: 0 },
+  margin: 8,
+  title: { x: 0, y: 0, w: 0, h: 0 },
+  subTitle: { x: 0, y: 0, w: 0, h: 0 },
+};
 
 function newShape() {
   let shapeIndex = floor(random(0, CONFIG.angles.length - 1));
@@ -164,41 +165,41 @@ function placeTitle() {
   };
 }
 
-// constants
-const COLORS = {
-  red: {
-    light: "rgba(255, 132, 94, 0.85)",
-    normal: "rgba(255, 81, 56, 0.80)",
-    dark: "rgba(222, 54, 44, 0.75)",
-  },
-  blue: {
-    light: "rgba(235, 255, 254, 0.76)",
-    normal: "rgba(156, 178, 217, 0.75)",
-    dark: "rgba(77, 79, 102, 0.75)",
-  },
-  green: {
-    light: "rgba(247, 255, 211, 0.75)",
-    normal: "rgba(84, 150, 94, 0.75)",
-    dark: "rgba(48, 97, 56, 0.75)",
-  },
-  yellow: {
-    light: "rgba(255, 244, 107, 0.84)",
-    normal: "rgba(229, 176, 53, 0.75)",
-    dark: "rgba(168, 137, 40, 0.75)",
-  },
-  neutral: {
-    light: "rgba(255, 249, 235, 0.70)",
-    dark: "rgba(173, 167, 151, 0.40)",
-  },
-};
+function preload() {
+  title = loadImage("/assets/title.png");
+  subTitle = loadImage("/assets/subTitle.png");
+}
 
-const CONFIG = {
-  spawnRate: 10, // How often shapes will generate (every X frames)
-  angles: [
-    -25, -23, -20, -16, -13, -11, -6.5, 0, 5.25, 10, 13, 18, 22, 24, 25.5,
-  ],
-  apex: { x: 0, y: 0 },
-  margin: 8,
-  title: { x: 0, y: 0, w: 0, h: 0 },
-  subTitle: { x: 0, y: 0, w: 0, h: 0 },
-};
+function setup() {
+  let container = select("#sketch-container");
+  let w = container.width;
+  let h = container.height;
+  createCanvas(w, h);
+  select("canvas").parent("sketch-container");
+
+  // Set APEX based off canvas size
+  CONFIG.apex = {
+    x: floor(width / 2),
+    y: floor(height / 4),
+  };
+
+  placeTitle();
+  newShape(); // Create a single shape so that the server does not crash on reload.
+}
+
+function draw() {
+  background("rgba(233, 221, 195, 1)");
+  const { x: titleX, y: titleY, w: titleW, h: titleH } = CONFIG.title;
+  image(title, titleX, titleY, titleW, titleH);
+  const { x: subX, y: subY, w: subW, h: subH } = CONFIG.subTitle;
+  image(subTitle, subX, subY, subW, subH);
+
+  if (frameCount % CONFIG.spawnRate === 0) {
+    newShape();
+  }
+  for (let shape of shapes) {
+    shape.render();
+  }
+  shapes = shapes.filter((shape) => !shape.isDead);
+}
+
