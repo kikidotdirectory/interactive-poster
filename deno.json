@@ -5,6 +5,6 @@
 		"dev": "deno task watch & deno task serve"
 	},
 	"imports": {
-		"p5": "npm:p5@^2.3.0"
+		"p5": "npm:p5@^1.1.0"
 	}
 }
