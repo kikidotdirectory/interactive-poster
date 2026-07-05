@@ -31,38 +31,130 @@ const COLORS = {
 	},
 };
 
+// General poster configuration
+const CONFIG = {
+	apex: { x: 0, y: 0 },
+	margin: 8,
+	title: { x: 0, y: 0, w: 0, h: 0 },
+	subTitle: { x: 0, y: 0, w: 0, h: 0 },
+	// How often shapes will generate (every X frames)
+	spawnRate: 10,
+	// The angles from the apex from which that compose the lanes that the shapes travel on.
+	angles: [
+		-25,
+		-23,
+		-20,
+		-16,
+		-13,
+		-11,
+		-6.5,
+		0,
+		5.25,
+		10,
+		13,
+		18,
+		22,
+		24,
+		25.5,
+	],
+};
+
+const POSTER_CONFIG = {
+	margin: 8,
+};
+
 const sketch = (p: p5) => {
 	let shapes = [];
 	let title: p5.Image;
 	let subTitle: p5.Image;
+	let canvas;
 
-	// General poster configuration
-	const CONFIG = {
-		apex: { x: 0, y: 0 },
-		margin: 8,
-		title: { x: 0, y: 0, w: 0, h: 0 },
-		subTitle: { x: 0, y: 0, w: 0, h: 0 },
-		// How often shapes will generate (every X frames)
-		spawnRate: 10,
-		// The angles from the apex from which that compose the lanes that the shapes travel on.
-		angles: [
-			-25,
-			-23,
-			-20,
-			-16,
-			-13,
-			-11,
-			-6.5,
-			0,
-			5.25,
-			10,
-			13,
-			18,
-			22,
-			24,
-			25.5,
-		],
-	};
+	class FalloutPoster {
+		w: number;
+		h: number;
+		apex: {
+			x: number;
+			y: number;
+		};
+
+		constructor(container: Element) {
+			const c = container.getBoundingClientRect();
+			this.w = c.width;
+			this.h = this.w * 4 / 3;
+			this.apex = {
+				x: p.floor(this.w / 2),
+				y: p.floor(this.h / 4),
+			};
+		}
+
+		init() {
+			p.createCanvas(this.w, this.h);
+			p.select("canvas").parent("sketch-container");
+
+			placeTitle();
+			newShape(); // Create a single shape so that the server does not crash on reload.
+		}
+	}
+	class Shape {
+		lanes: {
+			inner: number;
+			outer: number;
+		};
+		y: number;
+		segmentHeight: number;
+		topOffset: number;
+		bottomOffsetDeviation: number;
+		color: string;
+		isDead: boolean;
+
+		constructor(shapeConfig) {
+			this.lanes = shapeConfig.lanes;
+			this.y = shapeConfig.y;
+			this.segmentHeight = shapeConfig.segmentHeight;
+			this.topOffset = shapeConfig.topOffset;
+			this.bottomOffsetDeviation = shapeConfig.bottomOffsetDeviation;
+			this.color = shapeConfig.color;
+			this.isDead = false;
+		}
+
+		render() {
+			p.noStroke();
+			p.fill(this.color);
+			if (this.y === canvas.apex.y) {
+				this.shrink();
+			} else {
+				this.rise();
+			}
+			if (this.segmentHeight === 1) {
+				this.isDead = true;
+			}
+		}
+
+		shrink() {
+			// Drawing a triangle instead of a quad when @ APEX
+			const x1 = canvas.apex.x;
+			const y1 = canvas.apex.y;
+			const y2 = y1 + this.segmentHeight + this.topOffset;
+			const x2 = getX(y2, this.lanes.outer);
+			const y3 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
+			const x3 = getX(y3, this.lanes.inner);
+			p.triangle(x1, y1, x2, y2, x3, y3);
+			this.segmentHeight -= 1;
+		}
+
+		rise() {
+			const y1 = this.y;
+			const x1 = getX(y1, this.lanes.inner);
+			const y2 = y1 + this.topOffset;
+			const x2 = getX(y2, this.lanes.outer);
+			const y3 = y2 + this.segmentHeight;
+			const x3 = getX(y3, this.lanes.outer);
+			const y4 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
+			const x4 = getX(y4, this.lanes.inner);
+			p.quad(x1, y1, x2, y2, x3, y3, x4, y4);
+			this.y -= 1;
+		}
+	}
 
 	function newShape() {
 		// Pick one of the lanes as the center
@@ -93,67 +185,6 @@ const sketch = (p: p5) => {
 		);
 	}
 
-	class Shape {
-		lanes: {
-			inner: number;
-			outer: number;
-		};
-		y: number;
-		segmentHeight: number;
-		topOffset: number;
-		bottomOffsetDeviation: number;
-		color: string;
-		isDead: boolean;
-
-		constructor(shapeConfig) {
-			this.lanes = shapeConfig.lanes;
-			this.y = shapeConfig.y;
-			this.segmentHeight = shapeConfig.segmentHeight;
-			this.topOffset = shapeConfig.topOffset;
-			this.bottomOffsetDeviation = shapeConfig.bottomOffsetDeviation;
-			this.color = shapeConfig.color;
-			this.isDead = false;
-		}
-
-		render() {
-			p.noStroke();
-			p.fill(this.color);
-			if (this.y === CONFIG.apex.y) {
-				this.shrink();
-			} else {
-				this.rise();
-			}
-			if (this.segmentHeight === 1) {
-				this.isDead = true;
-			}
-		}
-
-		shrink() {
-			// Drawing a triangle instead of a quad when @ APEX
-			const x1 = CONFIG.apex.x;
-			const y1 = CONFIG.apex.y;
-			const y2 = y1 + this.segmentHeight + this.topOffset;
-			const x2 = getX(y2, this.lanes.outer);
-			const y3 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
-			const x3 = getX(y3, this.lanes.inner);
-			p.triangle(x1, y1, x2, y2, x3, y3);
-			this.segmentHeight -= 1;
-		}
-
-		rise() {
-			const y1 = this.y;
-			const x1 = getX(y1, this.lanes.inner);
-			const y2 = y1 + this.topOffset;
-			const x2 = getX(y2, this.lanes.outer);
-			const y3 = y2 + this.segmentHeight;
-			const x3 = getX(y3, this.lanes.outer);
-			const y4 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
-			const x4 = getX(y4, this.lanes.inner);
-			p.quad(x1, y1, x2, y2, x3, y3, x4, y4);
-			this.y -= 1;
-		}
-	}
-
 	// Helper functions
 	function getLanes(shapeIndex) {
 		const leftAngle = CONFIG.angles[shapeIndex];
@@ -168,14 +199,14 @@ const sketch = (p: p5) => {
 
 	function getX(y, angleDegrees) {
 		const angle = p.radians(angleDegrees + 90); // change orientation of provided angles to face downwards.
-		const dy = y - CONFIG.apex.y;
+		const dy = y - canvas.apex.y;
 		const distance = dy / p.sin(angle);
-		const x = CONFIG.apex.x + distance * p.cos(angle);
+		const x = canvas.apex.x + distance * p.cos(angle);
 		return x;
 	}
 
 	function placeTitle() {
-		const subTitleSegment = CONFIG.apex.x - CONFIG.margin;
+		const subTitleSegment = canvas.apex.x - CONFIG.margin;
 		const subTitleAspectRatio = subTitle.height / subTitle.width;
 		const subTitleWidth = (subTitleSegment * 5) / 3;
 		const subTitleHeight = subTitleWidth * subTitleAspectRatio;
@@ -184,7 +215,7 @@ const sketch = (p: p5) => {
 			w: subTitleWidth,
 			h: subTitleHeight,
 			x: CONFIG.margin,
-			y: CONFIG.apex.y - subTitleHeight * 0.75,
+			y: canvas.apex.y - subTitleHeight * 0.75,
 		};
 
 		const titleAspectRatio = title.height / title.width;
@@ -206,20 +237,9 @@ const sketch = (p: p5) => {
 	};
 
 	p.setup = () => {
-		const container = document.querySelector("#sketch-container").getBoundingClientRect();
-		const w = container.width;
-		const h = w * 4 / 3;
-		p.createCanvas(w, h);
-		p.select("canvas").parent("sketch-container");
-
-		// Set APEX based off canvas size
-		CONFIG.apex = {
-			x: p.floor(p.width / 2),
-			y: p.floor(p.height / 4),
-		};
-
-		placeTitle();
-		newShape(); // Create a single shape so that the server does not crash on reload.
+		const container = document.querySelector("#sketch-container");
+		canvas = new FalloutPoster(container);
+		canvas.init();
 	};
 
 	p.draw = () => {
