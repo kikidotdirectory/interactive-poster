@@ -206,9 +206,9 @@ const sketch = (p: p5) => {
 	};
 
 	p.setup = () => {
-		const container = p.select("#sketch-container");
+		const container = document.querySelector("#sketch-container").getBoundingClientRect();
 		const w = container.width;
-		const h = container.height;
+		const h = w * 4 / 3;
 		p.createCanvas(w, h);
 		p.select("canvas").parent("sketch-container");
 
