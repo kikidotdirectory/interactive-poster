@@ -84,7 +84,7 @@ const sketch = (p: p5) => {
 		shapes.push(
 			new Shape({
 				lanes: getLanes(shapeIndex),
-				y: p.height + 1,
+				y: Math.floor(p.height + 1),
 				segmentHeight: shapeHeight,
 				topOffset: p.random(p.height / 100, p.height / 33),
 				bottomOffsetDeviation: p.random(-heightDeviation, heightDeviation),
@@ -232,10 +232,16 @@ const sketch = (p: p5) => {
 		if (p.frameCount % CONFIG.spawnRate === 0) {
 			newShape();
 		}
-		for (let shape of shapes) {
+		for (const shape of shapes) {
 			shape.render();
 		}
 		shapes = shapes.filter((shape) => !shape.isDead);
+
+		// safeguard memory leak
+		if (shapes.length > 60) {
+			console.log(`${shapes.length} is too many shapes, clearing them all.`);
+			shapes.length = 0;
+		}
 	};
 };
 
