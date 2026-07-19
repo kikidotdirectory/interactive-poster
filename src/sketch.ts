@@ -1,7 +1,7 @@
-import type p5 from "p5";
+import type P5 from "p5";
 
 // p5.js is used in instance mode, the script sourced from p5.js's CDN
-declare const p5: new(sketch: (p: p5) => void) => p5;
+declare const p5: new(sketch: (p: P5) => void) => P5;
 
 // Colors for each generated shape, light and dark corresponding to a side of the poster.
 const COLORS = {
@@ -63,10 +63,10 @@ const POSTER_CONFIG = {
 	margin: 8,
 };
 
-const sketch = (p: p5) => {
-	let shapes = [];
-	let title: p5.Image;
-	let subTitle: p5.Image;
+const sketch = (p: P5) => {
+	let shapes: Shape[] = [];
+	let title: P5.Image;
+	let subTitle: P5.Image;
 	let canvas;
 
 	class FalloutPoster {
@@ -95,6 +95,7 @@ const sketch = (p: p5) => {
 			newShape(); // Create a single shape so that the server does not crash on reload.
 		}
 	}
+
 	class Shape {
 		lanes: {
 			inner: number;
@@ -153,6 +154,10 @@ const sketch = (p: p5) => {
 			const x4 = getX(y4, this.lanes.inner);
 			p.quad(x1, y1, x2, y2, x3, y3, x4, y4);
 			this.y -= 1;
+		}
+
+		private riseSpeed(y: number) {
+			p.map(y, canvas.h + 1, canvas.apex.y, 0, 1);
 		}
 	}
 

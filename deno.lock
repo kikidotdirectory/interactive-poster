@@ -1,8 +1,8 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:dprint@*": "0.54.0",
-    "npm:p5@^1.1.0": "1.11.13"
+    "npm:@types/p5@^1.7.7": "1.7.7",
+    "npm:dprint@*": "0.54.0"
   },
   "npm": {
     "@dprint/darwin-arm64@0.54.0": {
@@ -60,6 +60,9 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
+    "@types/p5@1.7.7": {
+      "integrity": "sha512-WFuP7jqc5CkkMtCK/NphgvMnJz1Qi9CMuK7t6xLu/tuXkRdGQA4q4AD0dUYcChC0Oibe8PE8gbKSFPNF0BqVNw=="
+    },
     "dprint@0.54.0": {
       "integrity": "sha512-sIy25poR2gRP/tWPTgP0MPeJoJcpv0xzYDcsboapvthbEt1Qw3Al252CA0xFyIh2cYEGGKyBJtKokryv4ERlJw==",
       "optionalDependencies": [
@@ -77,14 +80,11 @@
       ],
       "scripts": true,
       "bin": true
-    },
-    "p5@1.11.13": {
-      "integrity": "sha512-gfGo4AkyuNMs6Ko7UNFM9K2edqFRGyLrFaYUB+XXF127JVdEPu0BIaC5uDDNJpsRMOD9hJMUpsOH4HkfuNhvhA=="
     }
   },
   "workspace": {
     "dependencies": [
-      "npm:p5@^1.1.0"
+      "npm:@types/p5@^1.7.7"
     ]
   }
 }
