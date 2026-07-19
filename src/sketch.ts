@@ -60,10 +60,9 @@ const POSTER_CONFIG = {
 };
 
 const sketch = (p: P5) => {
-	let shapes: Shape[] = [];
 	let title: P5.Image;
 	let subTitle: P5.Image;
-	let canvas;
+	let canvas: FalloutPoster;
 
 	class FalloutPoster {
 		w: number;
@@ -72,6 +71,7 @@ const sketch = (p: P5) => {
 			x: number;
 			y: number;
 		};
+		shapes: Shape[];
 
 		constructor(container: Element) {
 			const c = container.getBoundingClientRect();
@@ -81,14 +81,7 @@ const sketch = (p: P5) => {
 				x: p.floor(this.w / 2),
 				y: p.floor(this.h / 4),
 			};
-		}
-
-		init() {
-			p.createCanvas(this.w, this.h);
-			p.select("canvas").parent("sketch-container");
-
-			placeTitle();
-			newShape(); // Create a single shape so that the server does not crash on reload.
+			this.shapes = [];
 		}
 	}
 
@@ -174,7 +167,7 @@ const sketch = (p: P5) => {
 			shapeColor = COLORS[colorName][shade];
 		}
 
-		shapes.push(
+		canvas.shapes.push(
 			new Shape({
 				lanes: getLanes(shapeIndex),
 				y: Math.floor(p.height + 1),
@@ -239,8 +232,15 @@ const sketch = (p: P5) => {
 
 	p.setup = () => {
 		const container = document.querySelector("#sketch-container");
+		if (!container) {
+			throw new Error("#sketch-container not found");
+		}
 		canvas = new FalloutPoster(container);
-		canvas.init();
+		p.createCanvas(canvas.w, canvas.h);
+		p.select("canvas").parent("sketch-container");
+
+		placeTitle();
+		newShape(); // Create a single shape so that the server does not crash on reload.
 	};
 
 	p.draw = () => {
@@ -253,15 +253,15 @@ const sketch = (p: P5) => {
 		if (p.frameCount % POSTER_CONFIG.spawnRate === 0) {
 			newShape();
 		}
-		for (const shape of shapes) {
+		for (const shape of canvas.shapes) {
 			shape.render();
 		}
-		shapes = shapes.filter((shape) => !shape.isDead);
+		canvas.shapes = canvas.shapes.filter((shape) => !shape.isDead);
 
 		// safeguard memory leak
-		if (shapes.length > 60) {
-			console.log(`${shapes.length} is too many shapes, clearing them all.`);
-			shapes.length = 0;
+		if (canvas.shapes.length > 60) {
+			console.log(`${canvas.shapes.length} is too many shapes, clearing them all.`);
+			canvas.shapes.length = 0;
 		}
 	};
 };
