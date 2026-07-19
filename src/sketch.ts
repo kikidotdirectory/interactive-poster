@@ -141,14 +141,41 @@ const sketch = (p: P5) => {
 		color: string;
 		isDead: boolean;
 
-		constructor(shapeConfig) {
-			this.lanes = shapeConfig.lanes;
-			this.y = shapeConfig.y;
-			this.segmentHeight = shapeConfig.segmentHeight;
-			this.topOffset = shapeConfig.topOffset;
-			this.bottomOffsetDeviation = shapeConfig.bottomOffsetDeviation;
-			this.color = shapeConfig.color;
+		constructor() {
+			// Pick one of the lanes as the center
+			const shapeIndex = p.floor(p.random(0, POSTER_CONFIG.angles.length - 1));
+			// Generate the base height of the shape.
+			const shapeHeight = p.floor(p.random(p.height / 20, p.height / 8));
+			const heightDeviation = shapeHeight / 10;
+
+			const colorName = p.random(["neutral", "red", "blue", "green", "yellow"]);
+			let shapeColor = undefined;
+			if (colorName === "neutral") {
+				// Left half: light, Right half: dark
+				shapeColor = shapeIndex < 7 ? COLORS.neutral.dark : COLORS.neutral.light;
+			} else {
+				const shade = p.random(["light", "normal", "normal", "dark"]); // Hacky weighting system
+				shapeColor = COLORS[colorName][shade];
+			}
+
+			this.lanes = Shape.getLanes(shapeIndex);
+			this.y = Math.floor(p.height + 1);
+			this.segmentHeight = shapeHeight;
+			this.topOffset = p.random(p.height / 100, p.height / 33);
+			this.bottomOffsetDeviation = p.random(-heightDeviation, heightDeviation);
+			this.color = shapeColor;
 			this.isDead = false;
+		}
+
+		static getLanes(shapeIndex) {
+			const leftAngle = POSTER_CONFIG.angles[shapeIndex];
+			const rightAngle = POSTER_CONFIG.angles[shapeIndex + 1];
+
+			// Ensure that shapes will always be angled towards the center.
+			const inner = p.abs(leftAngle) < p.abs(rightAngle) ? leftAngle : rightAngle;
+			const outer = leftAngle === inner ? rightAngle : leftAngle;
+
+			return { inner, outer };
 		}
 
 		render() {
@@ -169,78 +196,37 @@ const sketch = (p: P5) => {
 			const x1 = canvas.apex.x;
 			const y1 = canvas.apex.y;
 			const y2 = y1 + this.segmentHeight + this.topOffset;
-			const x2 = getX(y2, this.lanes.outer);
+			const x2 = this.getX(y2, this.lanes.outer);
 			const y3 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
-			const x3 = getX(y3, this.lanes.inner);
+			const x3 = this.getX(y3, this.lanes.inner);
 			p.triangle(x1, y1, x2, y2, x3, y3);
 			this.segmentHeight -= 1;
 		}
 
 		rise() {
 			const y1 = this.y;
-			const x1 = getX(y1, this.lanes.inner);
+			const x1 = this.getX(y1, this.lanes.inner);
 			const y2 = y1 + this.topOffset;
-			const x2 = getX(y2, this.lanes.outer);
+			const x2 = this.getX(y2, this.lanes.outer);
 			const y3 = y2 + this.segmentHeight;
-			const x3 = getX(y3, this.lanes.outer);
+			const x3 = this.getX(y3, this.lanes.outer);
 			const y4 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
-			const x4 = getX(y4, this.lanes.inner);
+			const x4 = this.getX(y4, this.lanes.inner);
 			p.quad(x1, y1, x2, y2, x3, y3, x4, y4);
 			this.y -= 1;
+		}
+
+		getX(y, angleDegrees) {
+			const angle = p.radians(angleDegrees + 90); // change orientation of provided angles to face downwards.
+			const dy = y - canvas.apex.y;
+			const distance = dy / p.sin(angle);
+			const x = canvas.apex.x + distance * p.cos(angle);
+			return x;
 		}
 
 		private riseSpeed(y: number) {
 			p.map(y, canvas.h + 1, canvas.apex.y, 0, 1);
 		}
-	}
-
-	function newShape() {
-		// Pick one of the lanes as the center
-		const shapeIndex = p.floor(p.random(0, POSTER_CONFIG.angles.length - 1));
-		// Generate the base height of the shape.
-		const shapeHeight = p.floor(p.random(p.height / 20, p.height / 8));
-		const heightDeviation = shapeHeight / 10;
-
-		const colorName = p.random(["neutral", "red", "blue", "green", "yellow"]);
-		let shapeColor = undefined;
-		if (colorName === "neutral") {
-			// Left half: light, Right half: dark
-			shapeColor = shapeIndex < 7 ? COLORS.neutral.dark : COLORS.neutral.light;
-		} else {
-			const shade = p.random(["light", "normal", "normal", "dark"]); // Hacky weighting system
-			shapeColor = COLORS[colorName][shade];
-		}
-
-		canvas.shapes.push(
-			new Shape({
-				lanes: getLanes(shapeIndex),
-				y: Math.floor(p.height + 1),
-				segmentHeight: shapeHeight,
-				topOffset: p.random(p.height / 100, p.height / 33),
-				bottomOffsetDeviation: p.random(-heightDeviation, heightDeviation),
-				color: shapeColor,
-			}),
-		);
-	}
-
-	// Helper functions
-	function getLanes(shapeIndex) {
-		const leftAngle = POSTER_CONFIG.angles[shapeIndex];
-		const rightAngle = POSTER_CONFIG.angles[shapeIndex + 1];
-
-		// Ensure that shapes will always be angled towards the center.
-		const inner = p.abs(leftAngle) < p.abs(rightAngle) ? leftAngle : rightAngle;
-		const outer = leftAngle === inner ? rightAngle : leftAngle;
-
-		return { inner, outer };
-	}
-
-	function getX(y, angleDegrees) {
-		const angle = p.radians(angleDegrees + 90); // change orientation of provided angles to face downwards.
-		const dy = y - canvas.apex.y;
-		const distance = dy / p.sin(angle);
-		const x = canvas.apex.x + distance * p.cos(angle);
-		return x;
 	}
 
 	p.preload = () => {
@@ -257,7 +243,7 @@ const sketch = (p: P5) => {
 		p.createCanvas(canvas.w, canvas.h);
 		p.select("canvas").parent("sketch-container");
 
-		newShape(); // Create a single shape so that the server does not crash on reload.
+		canvas.shapes.push(new Shape()); // Create a single shape so that the server does not crash on reload.
 	};
 
 	p.draw = () => {
@@ -265,7 +251,7 @@ const sketch = (p: P5) => {
 		canvas.renderTitle();
 
 		if (p.frameCount % POSTER_CONFIG.spawnRate === 0) {
-			newShape();
+			canvas.shapes.push(new Shape());
 		}
 		for (const shape of canvas.shapes) {
 			shape.render();
