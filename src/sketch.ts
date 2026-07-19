@@ -32,7 +32,7 @@ const COLORS = {
 };
 
 // General poster configuration
-const CONFIG = {
+const POSTER_CONFIG = {
 	apex: { x: 0, y: 0 },
 	margin: 8,
 	title: { x: 0, y: 0, w: 0, h: 0 },
@@ -57,10 +57,6 @@ const CONFIG = {
 		24,
 		25.5,
 	],
-};
-
-const POSTER_CONFIG = {
-	margin: 8,
 };
 
 const sketch = (p: P5) => {
@@ -163,7 +159,7 @@ const sketch = (p: P5) => {
 
 	function newShape() {
 		// Pick one of the lanes as the center
-		const shapeIndex = p.floor(p.random(0, CONFIG.angles.length - 1));
+		const shapeIndex = p.floor(p.random(0, POSTER_CONFIG.angles.length - 1));
 		// Generate the base height of the shape.
 		const shapeHeight = p.floor(p.random(p.height / 20, p.height / 8));
 		const heightDeviation = shapeHeight / 10;
@@ -192,8 +188,8 @@ const sketch = (p: P5) => {
 
 	// Helper functions
 	function getLanes(shapeIndex) {
-		const leftAngle = CONFIG.angles[shapeIndex];
-		const rightAngle = CONFIG.angles[shapeIndex + 1];
+		const leftAngle = POSTER_CONFIG.angles[shapeIndex];
+		const rightAngle = POSTER_CONFIG.angles[shapeIndex + 1];
 
 		// Ensure that shapes will always be angled towards the center.
 		const inner = p.abs(leftAngle) < p.abs(rightAngle) ? leftAngle : rightAngle;
@@ -211,28 +207,28 @@ const sketch = (p: P5) => {
 	}
 
 	function placeTitle() {
-		const subTitleSegment = canvas.apex.x - CONFIG.margin;
+		const subTitleSegment = canvas.apex.x - POSTER_CONFIG.margin;
 		const subTitleAspectRatio = subTitle.height / subTitle.width;
 		const subTitleWidth = (subTitleSegment * 5) / 3;
 		const subTitleHeight = subTitleWidth * subTitleAspectRatio;
 		// Position subtitle at 5/3 of title width to center within ampersand
-		CONFIG.subTitle = {
+		POSTER_CONFIG.subTitle = {
 			w: subTitleWidth,
 			h: subTitleHeight,
-			x: CONFIG.margin,
+			x: POSTER_CONFIG.margin,
 			y: canvas.apex.y - subTitleHeight * 0.75,
 		};
 
 		const titleAspectRatio = title.height / title.width;
-		const leftMargin = CONFIG.margin + 2;
-		const rightMargin = CONFIG.margin;
+		const leftMargin = POSTER_CONFIG.margin + 2;
+		const rightMargin = POSTER_CONFIG.margin;
 		const titleWidth = p.width - leftMargin - rightMargin;
 		const titleHeight = titleWidth * titleAspectRatio;
-		CONFIG.title = {
+		POSTER_CONFIG.title = {
 			w: titleWidth,
 			h: titleHeight,
 			x: leftMargin,
-			y: CONFIG.margin,
+			y: POSTER_CONFIG.margin,
 		};
 	}
 
@@ -249,12 +245,12 @@ const sketch = (p: P5) => {
 
 	p.draw = () => {
 		p.background("rgba(233, 221, 195, 1)");
-		const { x: titleX, y: titleY, w: titleW, h: titleH } = CONFIG.title;
+		const { x: titleX, y: titleY, w: titleW, h: titleH } = POSTER_CONFIG.title;
 		p.image(title, titleX, titleY, titleW, titleH);
-		const { x: subX, y: subY, w: subW, h: subH } = CONFIG.subTitle;
+		const { x: subX, y: subY, w: subW, h: subH } = POSTER_CONFIG.subTitle;
 		p.image(subTitle, subX, subY, subW, subH);
 
-		if (p.frameCount % CONFIG.spawnRate === 0) {
+		if (p.frameCount % POSTER_CONFIG.spawnRate === 0) {
 			newShape();
 		}
 		for (const shape of shapes) {
