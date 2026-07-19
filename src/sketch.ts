@@ -35,8 +35,6 @@ const COLORS = {
 const POSTER_CONFIG = {
 	apex: { x: 0, y: 0 },
 	margin: 8,
-	title: { x: 0, y: 0, w: 0, h: 0 },
-	subTitle: { x: 0, y: 0, w: 0, h: 0 },
 	// How often shapes will generate (every X frames)
 	spawnRate: 10,
 	// The angles from the apex from which that compose the lanes that the shapes travel on.
@@ -60,8 +58,8 @@ const POSTER_CONFIG = {
 };
 
 const sketch = (p: P5) => {
-	let title: P5.Image;
-	let subTitle: P5.Image;
+	let titleImage: P5.Image;
+	let subTitleImage: P5.Image;
 	let canvas: FalloutPoster;
 
 	class FalloutPoster {
@@ -72,8 +70,10 @@ const sketch = (p: P5) => {
 			y: number;
 		};
 		shapes: Shape[];
+		title: { image: P5.Image; x: number; y: number; w: number; h: number };
+		subTitle: { image: P5.Image; x: number; y: number; w: number; h: number };
 
-		constructor(container: Element) {
+		constructor(container: Element, titleImage: P5.Image, subTitleImage: P5.Image) {
 			const c = container.getBoundingClientRect();
 			this.w = c.width;
 			this.h = this.w * 4 / 3;
@@ -82,6 +82,45 @@ const sketch = (p: P5) => {
 				y: p.floor(this.h / 4),
 			};
 			this.shapes = [];
+			const { title, subTitle } = this.placeTitle(titleImage, subTitleImage);
+			this.title = title;
+			this.subTitle = subTitle;
+		}
+
+		// this is a mess that needs to be cleaned up
+		placeTitle(titleImage: P5.Image, subTitleImage: P5.Image) {
+			const subTitleSegment = this.apex.x - POSTER_CONFIG.margin;
+			const subTitleAspectRatio = subTitleImage.height / subTitleImage.width;
+			const subTitleWidth = (subTitleSegment * 5) / 3;
+			const subTitleHeight = subTitleWidth * subTitleAspectRatio;
+			// Position subtitle at 5/3 of title width to center within ampersand
+			const subTitle = {
+				image: subTitleImage,
+				w: subTitleWidth,
+				h: subTitleHeight,
+				x: POSTER_CONFIG.margin,
+				y: this.apex.y - subTitleHeight * 0.75,
+			};
+
+			const titleAspectRatio = titleImage.height / titleImage.width;
+			const leftMargin = POSTER_CONFIG.margin + 2;
+			const rightMargin = POSTER_CONFIG.margin;
+			const titleWidth = this.w - leftMargin - rightMargin;
+			const titleHeight = titleWidth * titleAspectRatio;
+			const title = {
+				image: titleImage,
+				w: titleWidth,
+				h: titleHeight,
+				x: leftMargin,
+				y: POSTER_CONFIG.margin,
+			};
+
+			return { title, subTitle };
+		}
+
+		renderTitle() {
+			p.image(this.title.image, this.title.x, this.title.y, this.title.w, this.title.h);
+			p.image(this.subTitle.image, this.subTitle.x, this.subTitle.y, this.subTitle.w, this.subTitle.h);
 		}
 	}
 
@@ -199,35 +238,9 @@ const sketch = (p: P5) => {
 		return x;
 	}
 
-	function placeTitle() {
-		const subTitleSegment = canvas.apex.x - POSTER_CONFIG.margin;
-		const subTitleAspectRatio = subTitle.height / subTitle.width;
-		const subTitleWidth = (subTitleSegment * 5) / 3;
-		const subTitleHeight = subTitleWidth * subTitleAspectRatio;
-		// Position subtitle at 5/3 of title width to center within ampersand
-		POSTER_CONFIG.subTitle = {
-			w: subTitleWidth,
-			h: subTitleHeight,
-			x: POSTER_CONFIG.margin,
-			y: canvas.apex.y - subTitleHeight * 0.75,
-		};
-
-		const titleAspectRatio = title.height / title.width;
-		const leftMargin = POSTER_CONFIG.margin + 2;
-		const rightMargin = POSTER_CONFIG.margin;
-		const titleWidth = p.width - leftMargin - rightMargin;
-		const titleHeight = titleWidth * titleAspectRatio;
-		POSTER_CONFIG.title = {
-			w: titleWidth,
-			h: titleHeight,
-			x: leftMargin,
-			y: POSTER_CONFIG.margin,
-		};
-	}
-
 	p.preload = () => {
-		title = p.loadImage("/assets/title.png");
-		subTitle = p.loadImage("/assets/subTitle.png");
+		titleImage = p.loadImage("/assets/title.png");
+		subTitleImage = p.loadImage("/assets/subTitle.png");
 	};
 
 	p.setup = () => {
@@ -235,20 +248,16 @@ const sketch = (p: P5) => {
 		if (!container) {
 			throw new Error("#sketch-container not found");
 		}
-		canvas = new FalloutPoster(container);
+		canvas = new FalloutPoster(container, titleImage, subTitleImage);
 		p.createCanvas(canvas.w, canvas.h);
 		p.select("canvas").parent("sketch-container");
 
-		placeTitle();
 		newShape(); // Create a single shape so that the server does not crash on reload.
 	};
 
 	p.draw = () => {
 		p.background("rgba(233, 221, 195, 1)");
-		const { x: titleX, y: titleY, w: titleW, h: titleH } = POSTER_CONFIG.title;
-		p.image(title, titleX, titleY, titleW, titleH);
-		const { x: subX, y: subY, w: subW, h: subH } = POSTER_CONFIG.subTitle;
-		p.image(subTitle, subX, subY, subW, subH);
+		canvas.renderTitle();
 
 		if (p.frameCount % POSTER_CONFIG.spawnRate === 0) {
 			newShape();
