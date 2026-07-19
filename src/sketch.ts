@@ -72,8 +72,12 @@ const sketch = (p: P5) => {
 		shapes: Shape[];
 		title: { image: P5.Image; x: number; y: number; w: number; h: number };
 		subTitle: { image: P5.Image; x: number; y: number; w: number; h: number };
+		margin: number
 
 		constructor(container: Element, titleImage: P5.Image, subTitleImage: P5.Image) {
+			// load attributes from POSTER_CONFIG
+			this.margin = POSTER_CONFIG.margin;
+
 			const c = container.getBoundingClientRect();
 			this.w = c.width;
 			this.h = this.w * 4 / 3;
@@ -82,6 +86,7 @@ const sketch = (p: P5) => {
 				y: p.floor(this.h / 4),
 			};
 			this.shapes = [];
+
 			const { title, subTitle } = this.placeTitle(titleImage, subTitleImage);
 			this.title = title;
 			this.subTitle = subTitle;
@@ -89,7 +94,7 @@ const sketch = (p: P5) => {
 
 		// this is a mess that needs to be cleaned up
 		placeTitle(titleImage: P5.Image, subTitleImage: P5.Image) {
-			const subTitleSegment = this.apex.x - POSTER_CONFIG.margin;
+			const subTitleSegment = this.apex.x - this.margin;
 			const subTitleAspectRatio = subTitleImage.height / subTitleImage.width;
 			const subTitleWidth = (subTitleSegment * 5) / 3;
 			const subTitleHeight = subTitleWidth * subTitleAspectRatio;
@@ -98,13 +103,13 @@ const sketch = (p: P5) => {
 				image: subTitleImage,
 				w: subTitleWidth,
 				h: subTitleHeight,
-				x: POSTER_CONFIG.margin,
+				x: this.margin,
 				y: this.apex.y - subTitleHeight * 0.75,
 			};
 
 			const titleAspectRatio = titleImage.height / titleImage.width;
-			const leftMargin = POSTER_CONFIG.margin + 2;
-			const rightMargin = POSTER_CONFIG.margin;
+			const leftMargin = this.margin + 2;
+			const rightMargin = this.margin;
 			const titleWidth = this.w - leftMargin - rightMargin;
 			const titleHeight = titleWidth * titleAspectRatio;
 			const title = {
@@ -112,7 +117,7 @@ const sketch = (p: P5) => {
 				w: titleWidth,
 				h: titleHeight,
 				x: leftMargin,
-				y: POSTER_CONFIG.margin,
+				y: this.margin,
 			};
 
 			return { title, subTitle };
