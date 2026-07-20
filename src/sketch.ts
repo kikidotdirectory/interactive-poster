@@ -32,11 +32,9 @@ const COLORS = {
 };
 
 // General poster configuration
-const CONFIG = {
+const POSTER_CONFIG = {
 	apex: { x: 0, y: 0 },
 	margin: 8,
-	title: { x: 0, y: 0, w: 0, h: 0 },
-	subTitle: { x: 0, y: 0, w: 0, h: 0 },
 	// How often shapes will generate (every X frames)
 	spawnRate: 10,
 	// The angles from the apex from which that compose the lanes that the shapes travel on.
@@ -59,15 +57,20 @@ const CONFIG = {
 	],
 };
 
-const POSTER_CONFIG = {
-	margin: 8,
-};
+// Returns a random float in [min, max).
+function random(min: number, max: number): number {
+	return Math.random() * (max - min) + min;
+}
+
+// Returns a random element from choices.
+function randomChoice<T>(choices: readonly T[]): T {
+	return choices[Math.floor(Math.random() * choices.length)];
+}
 
 const sketch = (p: P5) => {
-	let shapes: Shape[] = [];
-	let title: P5.Image;
-	let subTitle: P5.Image;
-	let canvas;
+	let titleImage: P5.Image;
+	let subTitleImage: P5.Image;
+	let canvas: FalloutPoster;
 
 	class FalloutPoster {
 		w: number;
@@ -76,8 +79,15 @@ const sketch = (p: P5) => {
 			x: number;
 			y: number;
 		};
+		shapes: Shape[];
+		title: { image: P5.Image; x: number; y: number; w: number; h: number };
+		subTitle: { image: P5.Image; x: number; y: number; w: number; h: number };
+		margin: number
 
-		constructor(container: Element) {
+		constructor(container: Element, titleImage: P5.Image, subTitleImage: P5.Image) {
+			// load attributes from POSTER_CONFIG
+			this.margin = POSTER_CONFIG.margin;
+
 			const c = container.getBoundingClientRect();
 			this.w = c.width;
 			this.h = this.w * 4 / 3;
@@ -85,14 +95,47 @@ const sketch = (p: P5) => {
 				x: p.floor(this.w / 2),
 				y: p.floor(this.h / 4),
 			};
+			this.shapes = [];
+
+			const { title, subTitle } = this.placeTitle(titleImage, subTitleImage);
+			this.title = title;
+			this.subTitle = subTitle;
 		}
 
-		init() {
-			p.createCanvas(this.w, this.h);
-			p.select("canvas").parent("sketch-container");
+		// this is a mess that needs to be cleaned up
+		placeTitle(titleImage: P5.Image, subTitleImage: P5.Image) {
+			const subTitleSegment = this.apex.x - this.margin;
+			const subTitleAspectRatio = subTitleImage.height / subTitleImage.width;
+			const subTitleWidth = (subTitleSegment * 5) / 3;
+			const subTitleHeight = subTitleWidth * subTitleAspectRatio;
+			// Position subtitle at 5/3 of title width to center within ampersand
+			const subTitle = {
+				image: subTitleImage,
+				w: subTitleWidth,
+				h: subTitleHeight,
+				x: this.margin,
+				y: this.apex.y - subTitleHeight * 0.75,
+			};
 
-			placeTitle();
-			newShape(); // Create a single shape so that the server does not crash on reload.
+			const titleAspectRatio = titleImage.height / titleImage.width;
+			const leftMargin = this.margin + 2;
+			const rightMargin = this.margin;
+			const titleWidth = this.w - leftMargin - rightMargin;
+			const titleHeight = titleWidth * titleAspectRatio;
+			const title = {
+				image: titleImage,
+				w: titleWidth,
+				h: titleHeight,
+				x: leftMargin,
+				y: this.margin,
+			};
+
+			return { title, subTitle };
+		}
+
+		renderTitle() {
+			p.image(this.title.image, this.title.x, this.title.y, this.title.w, this.title.h);
+			p.image(this.subTitle.image, this.subTitle.x, this.subTitle.y, this.subTitle.w, this.subTitle.h);
 		}
 	}
 
@@ -108,14 +151,41 @@ const sketch = (p: P5) => {
 		color: string;
 		isDead: boolean;
 
-		constructor(shapeConfig) {
-			this.lanes = shapeConfig.lanes;
-			this.y = shapeConfig.y;
-			this.segmentHeight = shapeConfig.segmentHeight;
-			this.topOffset = shapeConfig.topOffset;
-			this.bottomOffsetDeviation = shapeConfig.bottomOffsetDeviation;
-			this.color = shapeConfig.color;
+		constructor() {
+			// Pick one of the lanes as the center
+			const shapeIndex = p.floor(random(0, POSTER_CONFIG.angles.length - 1));
+			// Generate the base height of the shape.
+			const shapeHeight = p.floor(random(p.height / 20, p.height / 8));
+			const heightDeviation = shapeHeight / 10;
+
+			const colorName = randomChoice(["neutral", "red", "blue", "green", "yellow"] as const);
+			let shapeColor = undefined;
+			if (colorName === "neutral") {
+				// Left half: light, Right half: dark
+				shapeColor = shapeIndex < 7 ? COLORS.neutral.dark : COLORS.neutral.light;
+			} else {
+				const shade = randomChoice(["light", "normal", "normal", "dark"] as const); // Hacky weighting system
+				shapeColor = COLORS[colorName][shade];
+			}
+
+			this.lanes = Shape.getLanes(shapeIndex);
+			this.y = Math.floor(p.height + 1);
+			this.segmentHeight = shapeHeight;
+			this.topOffset = random(p.height / 100, p.height / 33);
+			this.bottomOffsetDeviation = random(-heightDeviation, heightDeviation);
+			this.color = shapeColor;
 			this.isDead = false;
+		}
+
+		static getLanes(shapeIndex: number) {
+			const leftAngle = POSTER_CONFIG.angles[shapeIndex];
+			const rightAngle = POSTER_CONFIG.angles[shapeIndex + 1];
+
+			// Ensure that shapes will always be angled towards the center.
+			const inner = p.abs(leftAngle) < p.abs(rightAngle) ? leftAngle : rightAngle;
+			const outer = leftAngle === inner ? rightAngle : leftAngle;
+
+			return { inner, outer };
 		}
 
 		render() {
@@ -136,24 +206,32 @@ const sketch = (p: P5) => {
 			const x1 = canvas.apex.x;
 			const y1 = canvas.apex.y;
 			const y2 = y1 + this.segmentHeight + this.topOffset;
-			const x2 = getX(y2, this.lanes.outer);
+			const x2 = this.getX(y2, this.lanes.outer);
 			const y3 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
-			const x3 = getX(y3, this.lanes.inner);
+			const x3 = this.getX(y3, this.lanes.inner);
 			p.triangle(x1, y1, x2, y2, x3, y3);
 			this.segmentHeight -= 1;
 		}
 
 		rise() {
 			const y1 = this.y;
-			const x1 = getX(y1, this.lanes.inner);
+			const x1 = this.getX(y1, this.lanes.inner);
 			const y2 = y1 + this.topOffset;
-			const x2 = getX(y2, this.lanes.outer);
+			const x2 = this.getX(y2, this.lanes.outer);
 			const y3 = y2 + this.segmentHeight;
-			const x3 = getX(y3, this.lanes.outer);
+			const x3 = this.getX(y3, this.lanes.outer);
 			const y4 = y1 + this.segmentHeight + this.bottomOffsetDeviation;
-			const x4 = getX(y4, this.lanes.inner);
+			const x4 = this.getX(y4, this.lanes.inner);
 			p.quad(x1, y1, x2, y2, x3, y3, x4, y4);
 			this.y -= 1;
+		}
+
+		getX(y: number, angleDegrees: number) {
+			const angle = p.radians(angleDegrees + 90); // change orientation of provided angles to face downwards.
+			const dy = y - canvas.apex.y;
+			const distance = dy / p.sin(angle);
+			const x = canvas.apex.x + distance * p.cos(angle);
+			return x;
 		}
 
 		private riseSpeed(y: number) {
@@ -161,111 +239,43 @@ const sketch = (p: P5) => {
 		}
 	}
 
-	function newShape() {
-		// Pick one of the lanes as the center
-		const shapeIndex = p.floor(p.random(0, CONFIG.angles.length - 1));
-		// Generate the base height of the shape.
-		const shapeHeight = p.floor(p.random(p.height / 20, p.height / 8));
-		const heightDeviation = shapeHeight / 10;
-
-		const colorName = p.random(["neutral", "red", "blue", "green", "yellow"]);
-		let shapeColor = undefined;
-		if (colorName === "neutral") {
-			// Left half: light, Right half: dark
-			shapeColor = shapeIndex < 7 ? COLORS.neutral.dark : COLORS.neutral.light;
-		} else {
-			const shade = p.random(["light", "normal", "normal", "dark"]); // Hacky weighting system
-			shapeColor = COLORS[colorName][shade];
-		}
-
-		shapes.push(
-			new Shape({
-				lanes: getLanes(shapeIndex),
-				y: Math.floor(p.height + 1),
-				segmentHeight: shapeHeight,
-				topOffset: p.random(p.height / 100, p.height / 33),
-				bottomOffsetDeviation: p.random(-heightDeviation, heightDeviation),
-				color: shapeColor,
-			}),
-		);
-	}
-
-	// Helper functions
-	function getLanes(shapeIndex) {
-		const leftAngle = CONFIG.angles[shapeIndex];
-		const rightAngle = CONFIG.angles[shapeIndex + 1];
-
-		// Ensure that shapes will always be angled towards the center.
-		const inner = p.abs(leftAngle) < p.abs(rightAngle) ? leftAngle : rightAngle;
-		const outer = leftAngle === inner ? rightAngle : leftAngle;
-
-		return { inner, outer };
-	}
-
-	function getX(y, angleDegrees) {
-		const angle = p.radians(angleDegrees + 90); // change orientation of provided angles to face downwards.
-		const dy = y - canvas.apex.y;
-		const distance = dy / p.sin(angle);
-		const x = canvas.apex.x + distance * p.cos(angle);
-		return x;
-	}
-
-	function placeTitle() {
-		const subTitleSegment = canvas.apex.x - CONFIG.margin;
-		const subTitleAspectRatio = subTitle.height / subTitle.width;
-		const subTitleWidth = (subTitleSegment * 5) / 3;
-		const subTitleHeight = subTitleWidth * subTitleAspectRatio;
-		// Position subtitle at 5/3 of title width to center within ampersand
-		CONFIG.subTitle = {
-			w: subTitleWidth,
-			h: subTitleHeight,
-			x: CONFIG.margin,
-			y: canvas.apex.y - subTitleHeight * 0.75,
-		};
-
-		const titleAspectRatio = title.height / title.width;
-		const leftMargin = CONFIG.margin + 2;
-		const rightMargin = CONFIG.margin;
-		const titleWidth = p.width - leftMargin - rightMargin;
-		const titleHeight = titleWidth * titleAspectRatio;
-		CONFIG.title = {
-			w: titleWidth,
-			h: titleHeight,
-			x: leftMargin,
-			y: CONFIG.margin,
-		};
-	}
-
 	p.preload = () => {
-		title = p.loadImage("/assets/title.png");
-		subTitle = p.loadImage("/assets/subTitle.png");
+		titleImage = p.loadImage("/assets/title.png");
+		subTitleImage = p.loadImage("/assets/subTitle.png");
 	};
 
 	p.setup = () => {
 		const container = document.querySelector("#sketch-container");
-		canvas = new FalloutPoster(container);
-		canvas.init();
+		if (!container) {
+			throw new Error("#sketch-container not found");
+		}
+		canvas = new FalloutPoster(container, titleImage, subTitleImage);
+		p.createCanvas(canvas.w, canvas.h);
+		const sketchCanvas = p.select("canvas");
+		if (!sketchCanvas) {
+			throw new Error("canvas not found");
+		}
+		sketchCanvas.parent("sketch-container");
+
+		canvas.shapes.push(new Shape()); // Create a single shape so that the server does not crash on reload.
 	};
 
 	p.draw = () => {
 		p.background("rgba(233, 221, 195, 1)");
-		const { x: titleX, y: titleY, w: titleW, h: titleH } = CONFIG.title;
-		p.image(title, titleX, titleY, titleW, titleH);
-		const { x: subX, y: subY, w: subW, h: subH } = CONFIG.subTitle;
-		p.image(subTitle, subX, subY, subW, subH);
+		canvas.renderTitle();
 
-		if (p.frameCount % CONFIG.spawnRate === 0) {
-			newShape();
+		if (p.frameCount % POSTER_CONFIG.spawnRate === 0) {
+			canvas.shapes.push(new Shape());
 		}
-		for (const shape of shapes) {
+		for (const shape of canvas.shapes) {
 			shape.render();
 		}
-		shapes = shapes.filter((shape) => !shape.isDead);
+		canvas.shapes = canvas.shapes.filter((shape) => !shape.isDead);
 
 		// safeguard memory leak
-		if (shapes.length > 60) {
-			console.log(`${shapes.length} is too many shapes, clearing them all.`);
-			shapes.length = 0;
+		if (canvas.shapes.length > 60) {
+			console.log(`${canvas.shapes.length} is too many shapes, clearing them all.`);
+			canvas.shapes.length = 0;
 		}
 	};
 };
