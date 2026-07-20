@@ -8,7 +8,7 @@
 
 `src/sketch.ts` is a single p5.js sketch (instance mode) that mimics [this poster by Erik Nitsche](https://www.moma.org/media/W1siZiIsIjIxMDczMyJdLFsicCIsImNvbnZlcnQiLCItcXVhbGl0eSA5MCAtcmVzaXplIDIwMDB4MjAwMFx1MDAzZSJdXQ.jpg?sha=f86609d331345a4c). it functions by continuously spawns colored quads which travel up the canvas along straight lanes converging on a single point (the "apex"), shrinking to a triangle as they arrive.
 
-p5.js requires two functions: `setup()`, which is run once when the sketch is initiated and `draw()`, which handles the drawing of the canvas for every frame thereon out. `sketch.ts` additionally defines `onWindowResized()` to improve responsiveness of the poster and `preload()` to use its assets.
+p5.js requires two functions: `setup()`, which is run once when the sketch is initiated and `draw()`, which handles the drawing of the canvas for every frame thereon out. `sketch.ts` additionally defines `preload()` to use its assets.
 
 ## initiation
 
