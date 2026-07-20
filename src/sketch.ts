@@ -251,7 +251,11 @@ const sketch = (p: P5) => {
 		}
 		canvas = new FalloutPoster(container, titleImage, subTitleImage);
 		p.createCanvas(canvas.w, canvas.h);
-		p.select("canvas").parent("sketch-container");
+		const sketchCanvas = p.select("canvas");
+		if (!sketchCanvas) {
+			throw new Error("canvas not found");
+		}
+		sketchCanvas.parent("sketch-container");
 
 		canvas.shapes.push(new Shape()); // Create a single shape so that the server does not crash on reload.
 	};
