@@ -57,6 +57,16 @@ const POSTER_CONFIG = {
 	],
 };
 
+// Returns a random float in [min, max).
+function random(min: number, max: number): number {
+	return Math.random() * (max - min) + min;
+}
+
+// Returns a random element from choices.
+function randomChoice<T>(choices: readonly T[]): T {
+	return choices[Math.floor(Math.random() * choices.length)];
+}
+
 const sketch = (p: P5) => {
 	let titleImage: P5.Image;
 	let subTitleImage: P5.Image;
@@ -143,31 +153,31 @@ const sketch = (p: P5) => {
 
 		constructor() {
 			// Pick one of the lanes as the center
-			const shapeIndex = p.floor(p.random(0, POSTER_CONFIG.angles.length - 1));
+			const shapeIndex = p.floor(random(0, POSTER_CONFIG.angles.length - 1));
 			// Generate the base height of the shape.
-			const shapeHeight = p.floor(p.random(p.height / 20, p.height / 8));
+			const shapeHeight = p.floor(random(p.height / 20, p.height / 8));
 			const heightDeviation = shapeHeight / 10;
 
-			const colorName = p.random(["neutral", "red", "blue", "green", "yellow"]);
+			const colorName = randomChoice(["neutral", "red", "blue", "green", "yellow"] as const);
 			let shapeColor = undefined;
 			if (colorName === "neutral") {
 				// Left half: light, Right half: dark
 				shapeColor = shapeIndex < 7 ? COLORS.neutral.dark : COLORS.neutral.light;
 			} else {
-				const shade = p.random(["light", "normal", "normal", "dark"]); // Hacky weighting system
+				const shade = randomChoice(["light", "normal", "normal", "dark"] as const); // Hacky weighting system
 				shapeColor = COLORS[colorName][shade];
 			}
 
 			this.lanes = Shape.getLanes(shapeIndex);
 			this.y = Math.floor(p.height + 1);
 			this.segmentHeight = shapeHeight;
-			this.topOffset = p.random(p.height / 100, p.height / 33);
-			this.bottomOffsetDeviation = p.random(-heightDeviation, heightDeviation);
+			this.topOffset = random(p.height / 100, p.height / 33);
+			this.bottomOffsetDeviation = random(-heightDeviation, heightDeviation);
 			this.color = shapeColor;
 			this.isDead = false;
 		}
 
-		static getLanes(shapeIndex) {
+		static getLanes(shapeIndex: number) {
 			const leftAngle = POSTER_CONFIG.angles[shapeIndex];
 			const rightAngle = POSTER_CONFIG.angles[shapeIndex + 1];
 
@@ -216,7 +226,7 @@ const sketch = (p: P5) => {
 			this.y -= 1;
 		}
 
-		getX(y, angleDegrees) {
+		getX(y: number, angleDegrees: number) {
 			const angle = p.radians(angleDegrees + 90); // change orientation of provided angles to face downwards.
 			const dy = y - canvas.apex.y;
 			const distance = dy / p.sin(angle);
