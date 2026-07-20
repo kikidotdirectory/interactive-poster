@@ -33,7 +33,6 @@ const COLORS = {
 
 // General poster configuration
 const POSTER_CONFIG = {
-	apex: { x: 0, y: 0 },
 	margin: 8,
 	// How often shapes will generate (every X frames)
 	spawnRate: 10,
