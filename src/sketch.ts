@@ -82,11 +82,15 @@ const sketch = (p: P5) => {
 		shapes: Shape[];
 		title: { image: P5.Image; x: number; y: number; w: number; h: number };
 		subTitle: { image: P5.Image; x: number; y: number; w: number; h: number };
-		margin: number
+		margin: number;
+		angles: number[];
+		spawnRate: number;
 
 		constructor(container: Element, titleImage: P5.Image, subTitleImage: P5.Image) {
 			// load attributes from POSTER_CONFIG
 			this.margin = POSTER_CONFIG.margin;
+			this.angles = POSTER_CONFIG.angles;
+			this.spawnRate = POSTER_CONFIG.spawnRate;
 
 			const c = container.getBoundingClientRect();
 			this.w = c.width;
@@ -153,7 +157,7 @@ const sketch = (p: P5) => {
 
 		constructor() {
 			// Pick one of the lanes as the center
-			const shapeIndex = p.floor(random(0, POSTER_CONFIG.angles.length - 1));
+			const shapeIndex = p.floor(random(0, canvas.angles.length - 1));
 			// Generate the base height of the shape.
 			const shapeHeight = p.floor(random(p.height / 20, p.height / 8));
 			const heightDeviation = shapeHeight / 10;
@@ -178,8 +182,8 @@ const sketch = (p: P5) => {
 		}
 
 		static getLanes(shapeIndex: number) {
-			const leftAngle = POSTER_CONFIG.angles[shapeIndex];
-			const rightAngle = POSTER_CONFIG.angles[shapeIndex + 1];
+			const leftAngle = canvas.angles[shapeIndex];
+			const rightAngle = canvas.angles[shapeIndex + 1];
 
 			// Ensure that shapes will always be angled towards the center.
 			const inner = p.abs(leftAngle) < p.abs(rightAngle) ? leftAngle : rightAngle;
@@ -264,7 +268,7 @@ const sketch = (p: P5) => {
 		p.background("rgba(233, 221, 195, 1)");
 		canvas.renderTitle();
 
-		if (p.frameCount % POSTER_CONFIG.spawnRate === 0) {
+		if (p.frameCount % canvas.spawnRate === 0) {
 			canvas.shapes.push(new Shape());
 		}
 		for (const shape of canvas.shapes) {
